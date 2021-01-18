@@ -35,8 +35,8 @@
 # 1. Specify variables
 #==========================================================================================
 
-#/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3dprintyourbrain/
-
+#command:
+#./3Dprinting_brain.sh "/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3dprintyourbrain/T1_to_3Dprint" "Josh" "/usr/bin/"
 
 # Main folder for the whole project
 export MAIN_DIR=$1
