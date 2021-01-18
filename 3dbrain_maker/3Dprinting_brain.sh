@@ -35,6 +35,9 @@
 # 1. Specify variables
 #==========================================================================================
 
+#/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3dprintyourbrain/
+
+
 # Main folder for the whole project
 export MAIN_DIR=$1
 

@@ -11,7 +11,7 @@ So, you want to 3D print your own brain? The following is a step by step guide t
 
 In short, the script will allow you to create a 3D model of your brain, all coming from a structural image (T1) like this:
 
-<img src="static/brain.png" width="400">
+<img src="images_readme/brain.png" width="400">
 
 **Note:** To create a 3D surface model of your brain we will use [FreeSurfer](http://freesurfer.net/), [meshlab](http://meshlab.sourceforge.net/) and [FSL](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki). Therefore you should make sure that those are already installed on your system.
 
@@ -64,11 +64,11 @@ meshlab $SUBJECTS_DIR/cortical.stl
 
 You should see something like this:
 
-<img src="static/cortical_rough.png">
+<img src="images_readme/cortical_rough.png">
 
 **Note:** If you have the following display message, just accept with **OK**.
 
-<img src="static/message_duplicates.png">
+<img src="images_readme/message_duplicates.png">
 
 This version of your surface reconstruction is still rather rough. So lets smooth it abit. Therefore, go to
 
@@ -80,15 +80,15 @@ Filters
 
 This should open up the following window:
 
-<img src="static/laplacian_smooth.png">
+<img src="images_readme/laplacian_smooth.png">
 
 Just set ``Smoothing steps`` to ``100`` and ``perc on`` under ``delta (abs and %)`` to ``0.100``. And finally press ``Apply``. You should now have something that looks like this:
 
-<img src="static/cortical_smooth.png">
+<img src="images_readme/cortical_smooth.png">
 
 After this step, click on ``File`` and ``Export Mesh`` and save the whole thing without ``Binary encoding``, i.e.:
 
-<img src="static/message_export.png">
+<img src="images_readme/message_export.png">
 
 Press ``OK`` and close ``meshlab`` again.
 
@@ -117,7 +117,7 @@ fslmaths $SUBJECTS_DIR/subcortical.nii \
 
 After this step you'll have a NIfTI file that only contains the areas you were interested in. It should look something like this:
 
-<img src="static/subcortical_aseg.png"  width="400">
+<img src="images_readme/subcortical_aseg.png"  width="400">
 
 ## Step 5 - Create 3D Model of Subcortical Areas
 
@@ -157,7 +157,7 @@ meshlab $SUBJECTS_DIR/subcortical.stl
 
 The output you get should be as follows:
 
-<img src="static/subcortical.png">
+<img src="images_readme/subcortical.png">
 
 On the left you see the surface reconstruction before smoothing, just after the tesselation and on the right you see the smoothed subcortical surface model after scale dependent laplacian smoothing.
 
@@ -195,7 +195,7 @@ Use again ``meshlab`` to load ``final.stl``.
 meshlab $SUBJECTS_DIR/final.stl
 ```
 
-<img src="static/final.png">
+<img src="images_readme/final.png">
 
 Now, as a final step: Export the mesh again, but this time use ``Binary encoding``. This will reduce the data volume dramatically and will make it easier to send or upload the 3D model.
 
@@ -211,7 +211,7 @@ If you don't have access to a 3D printer, than there are many options on the int
 
 And this is how the final product might look like:
 
-<img src="static/3dbrain.png" width="400">
+<img src="images_readme/3dbrain.png" width="400">
 
 
 # 3D print alternative
