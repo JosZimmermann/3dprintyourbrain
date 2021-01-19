@@ -38,6 +38,8 @@
 #command:
 #./3Dprinting_brain.sh "/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3dprintyourbrain/T1_to_3Dprint" "Josh" "/usr/bin/"
 
+
+
 # Main folder for the whole project
 export MAIN_DIR=$1
 
@@ -80,11 +82,19 @@ mkdir -p $SUBJECTS_DIR/subcortical
 mri_convert $SUBJECTS_DIR/mri/aseg.mgz $SUBJECTS_DIR/subcortical/subcortical.nii
 
 # Second, binarize all areas that you're not interested and inverse the binarization
+#ALL SUBCORTICAL STRUCTURES
+# mri_binarize --i $SUBJECTS_DIR/subcortical/subcortical.nii \
+             # --match 2 3 24 31 41 42 63 72 77 51 52 13 12 43 50 4 11 26 58 49 10 17 18 53 54 44 5 80 14 15 30 62 \
+             # --inv \
+             # --o $SUBJECTS_DIR/subcortical/bin.nii
+			 
+#ONLY CORPUS CALLOSUM			 
 mri_binarize --i $SUBJECTS_DIR/subcortical/subcortical.nii \
-             --match 2 3 24 31 41 42 63 72 77 51 52 13 12 43 50 4 11 26 58 49 10 17 18 53 54 44 5 80 14 15 30 62 \
+             --match 7 8 16 28 46 47 60 2 3 24 31 41 42 63 72 77 51 52 13 12 43 50 4 11 26 58 49 10 17 18 53 54 44 5 80 14 15 30 62 \
              --inv \
              --o $SUBJECTS_DIR/subcortical/bin.nii
-
+			 
+			 
 # Third, multiply the original aseg.mgz file with the binarized files
 fslmaths $SUBJECTS_DIR/subcortical/subcortical.nii \
          -mul $SUBJECTS_DIR/subcortical/bin.nii \
@@ -97,7 +107,11 @@ cp $SUBJECTS_DIR/subcortical/subcortical.nii.gz $SUBJECTS_DIR/subcortical/subcor
 gunzip -f $SUBJECTS_DIR/subcortical/subcortical_tmp.nii.gz
 
 # Sixth, check all areas of interest for wholes and fill them out if necessary
-for i in 7 8 16 28 46 47 60 251 252 253 254 255
+#ALL SUBCORTICAL STRUCTURES
+# for i in 7 8 16 28 46 47 60 251 252 253 254 255
+#ONLY CORPUS CALLOSUM			 
+for i in 251 252 253 254 255
+
 do
     mri_pretess $SUBJECTS_DIR/subcortical/subcortical_tmp.nii \
     $i \
@@ -114,17 +128,55 @@ mri_tessellate $SUBJECTS_DIR/subcortical/subcortical_bin.nii.gz 1 $SUBJECTS_DIR/
 # Ninth, convert binary surface output into stl format
 mris_convert $SUBJECTS_DIR/subcortical/subcortical $SUBJECTS_DIR/subcortical.stl
 
-#==========================================================================================
-#4. Combine Cortical and Subcortial 3D Models
-#==========================================================================================
+# #==========================================================================================
+# #4. Combine Cortical and Subcortial 3D Models
+# #==========================================================================================
 
-echo 'solid '$SUBJECTS_DIR'/final.stl' > $SUBJECTS_DIR/final.stl
-sed '/solid vcg/d' $SUBJECTS_DIR/cortical.stl >> $SUBJECTS_DIR/final.stl
-sed '/solid vcg/d' $SUBJECTS_DIR/subcortical.stl >> $SUBJECTS_DIR/final.stl
-echo 'endsolid '$SUBJECTS_DIR'/final.stl' >> $SUBJECTS_DIR/final.stl
+#NOT WORKING FOR ME! COMBINE IN MESHMIX!!!
+
+# echo 'solid '$SUBJECTS_DIR'/final.stl' > $SUBJECTS_DIR/final.stl
+# sed '/solid vcg/d' $SUBJECTS_DIR/cortical.stl >> $SUBJECTS_DIR/final.stl
+# sed '/solid vcg/d' $SUBJECTS_DIR/subcortical.stl >> $SUBJECTS_DIR/final.stl
+# echo 'endsolid '$SUBJECTS_DIR'/final.stl' >> $SUBJECTS_DIR/final.stl
+
+
+# echo 'solid '$SUBJECTS_DIR'/final.stl' > $SUBJECTS_DIR/final.stl
+# sed '/solid vcg/d' $SUBJECTS_DIR/cortical_smooth.stl >> $SUBJECTS_DIR/final.stl
+# sed '/solid vcg/d' $SUBJECTS_DIR/subcortical_smooth.stl >> $SUBJECTS_DIR/final.stl
+# echo 'endsolid '$SUBJECTS_DIR'/final.stl' >> $SUBJECTS_DIR/final.stl
+
+
+#test = different way to combine stl files
+ # for file in $SUBJECTS_DIR/*.stl 
+ # do 
+     # # get .stl file name
+     # fileName=`basename $file` 
+     # # remove .stl file extension
+     # patchName=`echo "$fileName" | cut -f1 -d'.'` 
+     
+     # # append line solid [.stl FILE NAME] (eg. solid Bottom ) to file mergedStl.stl
+     # echo "solid $patchName" >> $SUBJECTS_DIR/mergedStl.stl
+     
+     # # copy all lines except first and last one from loaded .stl file and append them to mergedStl.stl
+     # tail -n +2 $file | head -n -1 >> $SUBJECTS_DIR/mergedStl.stl 
+     
+     # # append line endsolid [.stl FILE NAME] (eg. endsolid Bottom ) to file mergedStl.stl
+     # echo "endsolid $patchName" >> $SUBJECTS_DIR/mergedStl.stl 
+ # done
+
+
+ 
 
 #==========================================================================================
 #5. ScaleDependent Laplacian Smoothing, create a smoother surface: MeshLab
 #==========================================================================================
 
-$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/final.stl -o $SUBJECTS_DIR/final_s.stl -s $MAIN_DIR/smoothing.mlx
+#test
+#$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/mergedStl.stl -o $SUBJECTS_DIR/mergedStl_smooth.stl -s $MAIN_DIR/smoothing.mlx
+
+#$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/final.stl -o $SUBJECTS_DIR/final_smooth.stl -s $MAIN_DIR/smoothing.mlx
+
+$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/cortical.stl -o $SUBJECTS_DIR/cortical_smooth.stl -s $MAIN_DIR/smoothing.mlx
+
+$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/subcortical.stl -o $SUBJECTS_DIR/subcortical_smooth.stl -s $MAIN_DIR/smoothing.mlx
+
