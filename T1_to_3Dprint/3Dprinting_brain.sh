@@ -2,7 +2,7 @@
 #3dprintyourbrain
 
 # >>> PREREQUISITES:
-#     Install FreeSurfer (v6.0.0), FSL, MeshLab and admesh on Linux. 
+#     Install FreeSurfer (v6.0.0), FSL, pymeshlab and admesh on Linux. 
 #     command to install admesh: sudo apt-get install -y admesh 
 # 
 # >>> FOLDER STRUCTURE:
@@ -183,7 +183,8 @@ fi
 
 if [ ! -f $SUBJECTS_DIR/final_3Dbrain.stl ] || [ $force_run -eq 1 ]; then
 
-	$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/final_3Dbrain_raw.stl -o $SUBJECTS_DIR/final_3Dbrain.stl -s $MAIN_DIR/smoothing.mlx
+        python3 $MAIN_DIR/pymeshlab_smoothing.py $SUBJECTS_DIR/final_3Dbrain_raw.stl $SUBJECTS_DIR/final_3Dbrain.stl
+	#$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/final_3Dbrain_raw.stl -o $SUBJECTS_DIR/final_3Dbrain.stl -s $MAIN_DIR/smoothing.mlx
 fi
 
 #==========================================================================================
