@@ -27,7 +27,7 @@
 #       Three arguments: 
 #       !! Change: 1. $MAIN_DIR to the correct 3dbrain directory, e.g. "/media/sofie/my_brains/3dbrain"
 #                  2. $subject to the correct subject folder name, e.g., "sub-01"
-#                  3. $MESHLAB_DIR to the correct MeshLab directory 
+#                  # 3. $MESHLAB_DIR to the correct MeshLab directory 
 #                     (containing meshlabserver), e.g. "/usr/bin/"
 #       => example: ./3Dprinting_brain.sh "/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3Dprint_brain" "Josh" "/usr/bin/"
 
@@ -73,8 +73,8 @@ export subjT1=$MAIN_DIR/${subject}/input/struct.nii.gz
 # Path to the subject (output folder)
 export SUBJECTS_DIR=$MAIN_DIR/${subject}/output
 
-# Path to meshlabserver 
-export MESHLAB_DIR=$3
+# # Path to meshlabserver 
+# export MESHLAB_DIR=$3
 
 
 #==========================================================================================
@@ -174,16 +174,17 @@ fi
 
 if [ ! -f $SUBJECTS_DIR/final_3Dbrain_raw.stl ] || [ $force_run -eq 1 ]; then
 
-	admesh --no-check --merge=$SUBJECTS_DIR/subcortical.stl --write-binary-stl=$SUBJECTS_DIR/final_3Dbrain_raw.stl $SUBJECTS_DIR/cortical.stl
+        python "$MAIN_DIR/combine_mesh.py" "$SUBJECTS_DIR/subcortical.stl" "$SUBJECTS_DIR/cortical.stl" "$SUBJECTS_DIR/final_3Dbrain_raw.stl"
+	#admesh --no-check --merge=$SUBJECTS_DIR/subcortical.stl --write-binary-stl=$SUBJECTS_DIR/final_3Dbrain_raw.stl $SUBJECTS_DIR/cortical.stl
 fi
 
 #==========================================================================================
-#5. ScaleDependent Laplacian Smoothing, create a smoother surface: MeshLab
+#5. ScaleDependent Laplacian Smoothing, create a smoother surface: pymeshlab
 #==========================================================================================
 
 if [ ! -f $SUBJECTS_DIR/final_3Dbrain.stl ] || [ $force_run -eq 1 ]; then
 
-        python3 $MAIN_DIR/pymeshlab_smoothing.py $SUBJECTS_DIR/final_3Dbrain_raw.stl $SUBJECTS_DIR/final_3Dbrain.stl
+        python "$MAIN_DIR/pymeshlab_smoothing.py" "$SUBJECTS_DIR/final_3Dbrain_raw.stl" "$SUBJECTS_DIR/final_3Dbrain.stl"
 	#$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/final_3Dbrain_raw.stl -o $SUBJECTS_DIR/final_3Dbrain.stl -s $MAIN_DIR/smoothing.mlx
 fi
 
@@ -194,17 +195,19 @@ fi
 if [ $scale -eq 1 ];then
 	if [ ! -f $SUBJECTS_DIR/final_3Dbrain_${length}mm.stl ] || [ $force_run -eq 1 ]; then
 
+                python "$MAIN_DIR/scale_mesh.py" "$SUBJECTS_DIR/final_3Dbrain.stl" "$SUBJECTS_DIR/final_3Dbrain_${length}mm.stl" $length
+		
 		#get current length
-		admesh --no-check $SUBJECTS_DIR/final_3Dbrain.stl > $SUBJECTS_DIR/mesh_info.txt
-		ymax=$(awk '/Min Y/{ print $8 }' $SUBJECTS_DIR/mesh_info.txt)
-		ymin_temp=$(awk '/Min Y/{ print $4 }' $SUBJECTS_DIR/mesh_info.txt)
-		ymin=${ymin_temp::-1}
-		length_temp=$(echo "$ymax - $ymin" | bc)
+		# admesh --no-check $SUBJECTS_DIR/final_3Dbrain.stl > $SUBJECTS_DIR/mesh_info.txt
+		# ymax=$(awk '/Min Y/{ print $8 }' $SUBJECTS_DIR/mesh_info.txt)
+		# ymin_temp=$(awk '/Min Y/{ print $4 }' $SUBJECTS_DIR/mesh_info.txt)
+		# ymin=${ymin_temp::-1}
+		# length_temp=$(echo "$ymax - $ymin" | bc)
 		
-		#compute scale factor
-		scale_factor=$(echo "$length / $length_temp" | bc -l)
+		# #compute scale factor
+		# scale_factor=$(echo "$length / $length_temp" | bc -l)
 		
-		#scale 3D file
-		admesh --no-check --scale=$scale_factor --write-binary-stl=$SUBJECTS_DIR/final_3Dbrain_${length}mm.stl $SUBJECTS_DIR/final_3Dbrain.stl
+		# #scale 3D file
+		# admesh --no-check --scale=$scale_factor --write-binary-stl=$SUBJECTS_DIR/final_3Dbrain_${length}mm.stl $SUBJECTS_DIR/final_3Dbrain.stl
 	fi
 fi
