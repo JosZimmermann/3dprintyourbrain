@@ -2,19 +2,26 @@
 #3dprintyourbrain
 
 # >>> PREREQUISITES:
-#     Install FreeSurfer (v6.0.0), FSL and MeshLab on Linux.   
+#     Install FreeSurfer (v6.0.0), FSL, MeshLab and admesh on Linux. 
+#     command to install admesh: sudo apt-get install -y admesh 
 # 
 # >>> FOLDER STRUCTURE:
-#     3dbrain  -----   sub-01  -- input  -- struct.nii or struct.nii.gz
-#      | smoothing.xml         -- output -- .stl files and intermediate folders   
+#		3dbrain
+#		--3Dprinting_brain.sh
+#		--smoothing.xml
+#		--sub-01
+#		  --input
+#		    --struct.nii or struct.nii.gz
 #
-#     !! The final smoothed full brain .stl file = final_s.stl
+#     -> The final smoothed full brain .stl file = output/final_3Dbrain_smooth.stl
 #                                  
 # >>> INSTRUCTIONS:
 #     * Create the folder structure so that you have: 
-#       - a subject folder (e.g., sub-01) within the main folder (i.e., 3dbrain) containing 
-#         struct.nii or struct.nii.gz which is a T1 MPRAGE NifTI file.
-#       - the smoothing.xml file in your main folder (i.e., 3dbrain).
+#       - a subject folder (e.g., sub-01) within the main folder (i.e., 3dbrain) containing
+#           - this script 3Dprinting_brain.sh
+#           - the smoothing.xml file
+#           - subfolder input containing struct.nii or struct.nii.gz which is a T1 MPRAGE NifTI file.
+#
 #     * Type in the command terminal, WITHIN the directory where this script resides:
 #       ./3Dprinting_brain.sh  $MAIN_DIR $subject $MESHLAB_DIR
 #       Three arguments: 
@@ -22,23 +29,33 @@
 #                  2. $subject to the correct subject folder name, e.g., "sub-01"
 #                  3. $MESHLAB_DIR to the correct MeshLab directory 
 #                     (containing meshlabserver), e.g. "/usr/bin/"
-#       => example: ./3Dprinting_brain.sh  "/media/sofie/my_brains/3dbrain" "me" "/usr/bin"
+#       => example: ./3Dprinting_brain.sh "/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3Dprint_brain" "Josh" "/usr/bin/"
 
-# REMARK: This script is the result of a BrainHackGhent2018 project 
-#         (https://brainhackghent.github.io/#3Dprint), part of BrainHackGlobal2018
+# REMARK: Adapted from https://github.com/miykael/3dprintyourbrain
+#         Originally developped at BrainHackGhent2018 (https://brainhackghent.github.io/#3Dprint),
 #         by Sofie Van Den Bossche, James Deraeve, Thibault Sanders and Robin De Pauw.
-#         Further adaptations could include: the creation of seperate L and R hemispheres, 
-#         hollowing the inside of the 3D brain model in order to cut the price, 
-#         rescaling the 3D brain model, etc.
+
+
+
+#==========================================================================================
+# 0. Setup parameters
+#==========================================================================================
+#Specify if you want to run even if file already exists
+export force_run=(0) #0 = dont run if file already exists, 1 = force all except recon-all (freesurfer)
+export force_recon=(0) #0 = dont run if file recon already computed, 1 = force to run recon-all
+
+# Specify if only cortex or including subcortical structures (subcortical structures include brainstem, cerebellum etc.)
+export structure=(1) # 1 = only cortex, 2 = cortex + subcortical structures
+
+# Specify the desired length of 3D brain (length = distance along saggital axis)
+export scale=(0) #if 0 -> no scaling; if 1 -> scaling to specified length
+export length=(100) # define in mm
+
+
 
 #==========================================================================================
 # 1. Specify variables
 #==========================================================================================
-
-#command:
-#./3Dprinting_brain.sh "/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3dprintyourbrain/T1_to_3Dprint" "Josh" "/usr/bin/"
-
-
 
 # Main folder for the whole project
 export MAIN_DIR=$1
@@ -59,13 +76,17 @@ export SUBJECTS_DIR=$MAIN_DIR/${subject}/output
 # Path to meshlabserver 
 export MESHLAB_DIR=$3
 
+
 #==========================================================================================
 #2. Create Surface Model with FreeSurfer
 #==========================================================================================
 
-mkdir -p $SUBJECTS_DIR/mri/orig
-mri_convert ${subjT1} $SUBJECTS_DIR/mri/orig/001.mgz
-recon-all -subjid "output" -all -time -log logfile -nuintensitycor-3T -sd "$MAIN_DIR/${subject}/" -parallel
+if [ ! -f $SUBJECTS_DIR/surf/lh.pial ] ||  [ ! -f $SUBJECTS_DIR/surf/rh.pial ] || [ $force_recon -eq 1 ]; then
+
+	mkdir -p $SUBJECTS_DIR/mri/orig
+	mri_convert ${subjT1} $SUBJECTS_DIR/mri/orig/001.mgz
+	recon-all -subjid "output" -all -time -log logfile -nuintensitycor-3T -sd "$MAIN_DIR/${subject}/" -parallel
+fi
 
 #==========================================================================================
 #3. Create 3D Model of Cortical and Subcortical Areas
@@ -73,110 +94,116 @@ recon-all -subjid "output" -all -time -log logfile -nuintensitycor-3T -sd "$MAIN
 
 # CORTICAL
 # Convert output of step (2) to fsl-format
-mris_convert --combinesurfs $SUBJECTS_DIR/surf/lh.pial $SUBJECTS_DIR/surf/rh.pial \
+if [ ! -f $SUBJECTS_DIR/cortical.stl ] || [ $force_run -eq 1 ]; then
+
+	mris_convert --combinesurfs $SUBJECTS_DIR/surf/lh.pial $SUBJECTS_DIR/surf/rh.pial \
              $SUBJECTS_DIR/cortical.stl
+fi
 
 # SUBCORTICAL
-mkdir -p $SUBJECTS_DIR/subcortical
-# First, convert aseg.mgz into NIfTI format
-mri_convert $SUBJECTS_DIR/mri/aseg.mgz $SUBJECTS_DIR/subcortical/subcortical.nii
+if [ ! -f $SUBJECTS_DIR/subcortical.stl ] || [ $force_run -eq 1 ]; then
 
-# Second, binarize all areas that you're not interested and inverse the binarization
-#ALL SUBCORTICAL STRUCTURES
-# mri_binarize --i $SUBJECTS_DIR/subcortical/subcortical.nii \
-             # --match 2 3 24 31 41 42 63 72 77 51 52 13 12 43 50 4 11 26 58 49 10 17 18 53 54 44 5 80 14 15 30 62 \
-             # --inv \
-             # --o $SUBJECTS_DIR/subcortical/bin.nii
-			 
-#ONLY CORPUS CALLOSUM			 
-mri_binarize --i $SUBJECTS_DIR/subcortical/subcortical.nii \
-             --match 7 8 16 28 46 47 60 2 3 24 31 41 42 63 72 77 51 52 13 12 43 50 4 11 26 58 49 10 17 18 53 54 44 5 80 14 15 30 62 \
-             --inv \
-             --o $SUBJECTS_DIR/subcortical/bin.nii
-			 
-			 
-# Third, multiply the original aseg.mgz file with the binarized files
-fslmaths $SUBJECTS_DIR/subcortical/subcortical.nii \
-         -mul $SUBJECTS_DIR/subcortical/bin.nii \
-         $SUBJECTS_DIR/subcortical/subcortical.nii.gz
+	mkdir -p $SUBJECTS_DIR/subcortical
+	# First, convert aseg.mgz into NIfTI format
+	mri_convert $SUBJECTS_DIR/mri/aseg.mgz $SUBJECTS_DIR/subcortical/subcortical.nii
 
-# Fourth, copy original file to create a temporary file
-cp $SUBJECTS_DIR/subcortical/subcortical.nii.gz $SUBJECTS_DIR/subcortical/subcortical_tmp.nii.gz
+	# Second, binarize all areas that you're not interested and inverse the binarization
+	if [ $structure -eq 1 ];then
 
-# Fifth, unzip this file
-gunzip -f $SUBJECTS_DIR/subcortical/subcortical_tmp.nii.gz
+		# only corpus callosum (otherwise hemispheres are not attached)		 
+		mri_binarize --i $SUBJECTS_DIR/subcortical/subcortical.nii \
+					 --match 7 8 16 28 46 47 60 2 3 24 31 41 42 63 72 77 51 52 13 12 43 50 4 11 26 58 49 10 17 18 53 54 44 5 80 14 15 30 62 \
+					 --inv \
+					 --o $SUBJECTS_DIR/subcortical/bin.nii
+					 
+	elif [ $structure -eq 2 ];then
 
-# Sixth, check all areas of interest for wholes and fill them out if necessary
-#ALL SUBCORTICAL STRUCTURES
-# for i in 7 8 16 28 46 47 60 251 252 253 254 255
-#ONLY CORPUS CALLOSUM			 
-for i in 251 252 253 254 255
+		# all subcortical structures
+		mri_binarize --i $SUBJECTS_DIR/subcortical/subcortical.nii \
+					 --match 2 3 24 31 41 42 63 72 77 51 52 13 12 43 50 4 11 26 58 49 10 17 18 53 54 44 5 80 14 15 30 62 \
+					 --inv \
+					 --o $SUBJECTS_DIR/subcortical/bin.nii
+				 
+	fi			 
+				 
+	# Third, multiply the original aseg.mgz file with the binarized files
+	fslmaths $SUBJECTS_DIR/subcortical/subcortical.nii \
+			 -mul $SUBJECTS_DIR/subcortical/bin.nii \
+			 $SUBJECTS_DIR/subcortical/subcortical.nii.gz
 
-do
-    mri_pretess $SUBJECTS_DIR/subcortical/subcortical_tmp.nii \
-    $i \
-    $SUBJECTS_DIR/mri/norm.mgz \
-    $SUBJECTS_DIR/subcortical/subcortical_tmp.nii
-done
+	# Fourth, copy original file to create a temporary file
+	cp $SUBJECTS_DIR/subcortical/subcortical.nii.gz $SUBJECTS_DIR/subcortical/subcortical_tmp.nii.gz
 
-# Seventh, binarize the whole volume
-fslmaths $SUBJECTS_DIR/subcortical/subcortical_tmp.nii -bin $SUBJECTS_DIR/subcortical/subcortical_bin.nii
+	# Fifth, unzip this file
+	gunzip -f $SUBJECTS_DIR/subcortical/subcortical_tmp.nii.gz
 
-# Eighth, create a surface model of the binarized volume with mri_tessellate
-mri_tessellate $SUBJECTS_DIR/subcortical/subcortical_bin.nii.gz 1 $SUBJECTS_DIR/subcortical/subcortical
+	# Sixth, check all areas of interest for wholes and fill them out if necessary
+	# only corpus callosum
+	if [ $structure -eq 1 ];then			 
+		for i in 251 252 253 254 255
+		do
+			mri_pretess $SUBJECTS_DIR/subcortical/subcortical_tmp.nii \
+			$i \
+			$SUBJECTS_DIR/mri/norm.mgz \
+			$SUBJECTS_DIR/subcortical/subcortical_tmp.nii
+		done
+	# all subcortical structures
+	elif [ $structure -eq 2 ];then
+		for i in 7 8 16 28 46 47 60 251 252 253 254 255
+		do
+			mri_pretess $SUBJECTS_DIR/subcortical/subcortical_tmp.nii \
+			$i \
+			$SUBJECTS_DIR/mri/norm.mgz \
+			$SUBJECTS_DIR/subcortical/subcortical_tmp.nii
+		done
+	fi
 
-# Ninth, convert binary surface output into stl format
-mris_convert $SUBJECTS_DIR/subcortical/subcortical $SUBJECTS_DIR/subcortical.stl
+	# Seventh, binarize the whole volume
+	fslmaths $SUBJECTS_DIR/subcortical/subcortical_tmp.nii -bin $SUBJECTS_DIR/subcortical/subcortical_bin.nii
 
-# #==========================================================================================
-# #4. Combine Cortical and Subcortial 3D Models
-# #==========================================================================================
+	# Eighth, create a surface model of the binarized volume with mri_tessellate
+	mri_tessellate $SUBJECTS_DIR/subcortical/subcortical_bin.nii.gz 1 $SUBJECTS_DIR/subcortical/subcortical
 
-#NOT WORKING FOR ME! COMBINE IN MESHMIX!!!
+	# Ninth, convert binary surface output into stl format
+	mris_convert $SUBJECTS_DIR/subcortical/subcortical $SUBJECTS_DIR/subcortical.stl
+fi
 
-# echo 'solid '$SUBJECTS_DIR'/final.stl' > $SUBJECTS_DIR/final.stl
-# sed '/solid vcg/d' $SUBJECTS_DIR/cortical.stl >> $SUBJECTS_DIR/final.stl
-# sed '/solid vcg/d' $SUBJECTS_DIR/subcortical.stl >> $SUBJECTS_DIR/final.stl
-# echo 'endsolid '$SUBJECTS_DIR'/final.stl' >> $SUBJECTS_DIR/final.stl
+#==========================================================================================
+#4. Combine Cortical and Subcortial 3D Models
+#==========================================================================================
 
+if [ ! -f $SUBJECTS_DIR/final_3Dbrain_raw.stl ] || [ $force_run -eq 1 ]; then
 
-# echo 'solid '$SUBJECTS_DIR'/final.stl' > $SUBJECTS_DIR/final.stl
-# sed '/solid vcg/d' $SUBJECTS_DIR/cortical_smooth.stl >> $SUBJECTS_DIR/final.stl
-# sed '/solid vcg/d' $SUBJECTS_DIR/subcortical_smooth.stl >> $SUBJECTS_DIR/final.stl
-# echo 'endsolid '$SUBJECTS_DIR'/final.stl' >> $SUBJECTS_DIR/final.stl
-
-
-#test = different way to combine stl files
- # for file in $SUBJECTS_DIR/*.stl 
- # do 
-     # # get .stl file name
-     # fileName=`basename $file` 
-     # # remove .stl file extension
-     # patchName=`echo "$fileName" | cut -f1 -d'.'` 
-     
-     # # append line solid [.stl FILE NAME] (eg. solid Bottom ) to file mergedStl.stl
-     # echo "solid $patchName" >> $SUBJECTS_DIR/mergedStl.stl
-     
-     # # copy all lines except first and last one from loaded .stl file and append them to mergedStl.stl
-     # tail -n +2 $file | head -n -1 >> $SUBJECTS_DIR/mergedStl.stl 
-     
-     # # append line endsolid [.stl FILE NAME] (eg. endsolid Bottom ) to file mergedStl.stl
-     # echo "endsolid $patchName" >> $SUBJECTS_DIR/mergedStl.stl 
- # done
-
-
- 
+	admesh --no-check --merge=$SUBJECTS_DIR/subcortical.stl --write-binary-stl=$SUBJECTS_DIR/final_3Dbrain_raw.stl $SUBJECTS_DIR/cortical.stl
+fi
 
 #==========================================================================================
 #5. ScaleDependent Laplacian Smoothing, create a smoother surface: MeshLab
 #==========================================================================================
 
-#test
-#$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/mergedStl.stl -o $SUBJECTS_DIR/mergedStl_smooth.stl -s $MAIN_DIR/smoothing.mlx
+if [ ! -f $SUBJECTS_DIR/final_3Dbrain.stl ] || [ $force_run -eq 1 ]; then
 
-#$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/final.stl -o $SUBJECTS_DIR/final_smooth.stl -s $MAIN_DIR/smoothing.mlx
+	$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/final_3Dbrain_raw.stl -o $SUBJECTS_DIR/final_3Dbrain.stl -s $MAIN_DIR/smoothing.mlx
+fi
 
-$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/cortical.stl -o $SUBJECTS_DIR/cortical_smooth.stl -s $MAIN_DIR/smoothing.mlx
+#==========================================================================================
+#6. Scale to desired length
+#==========================================================================================
 
-$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/subcortical.stl -o $SUBJECTS_DIR/subcortical_smooth.stl -s $MAIN_DIR/smoothing.mlx
+if [ $scale -eq 1 ];then
+	if [ ! -f $SUBJECTS_DIR/final_3Dbrain_${length}mm.stl ] || [ $force_run -eq 1 ]; then
 
+		#get current length
+		admesh --no-check $SUBJECTS_DIR/final_3Dbrain.stl > $SUBJECTS_DIR/mesh_info.txt
+		ymax=$(awk '/Min Y/{ print $8 }' $SUBJECTS_DIR/mesh_info.txt)
+		ymin_temp=$(awk '/Min Y/{ print $4 }' $SUBJECTS_DIR/mesh_info.txt)
+		ymin=${ymin_temp::-1}
+		length_temp=$(echo "$ymax - $ymin" | bc)
+		
+		#compute scale factor
+		scale_factor=$(echo "$length / $length_temp" | bc -l)
+		
+		#scale 3D file
+		admesh --no-check --scale=$scale_factor --write-binary-stl=$SUBJECTS_DIR/final_3Dbrain_${length}mm.stl $SUBJECTS_DIR/final_3Dbrain.stl
+	fi
+fi
