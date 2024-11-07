@@ -1,10 +1,12 @@
 # smooth_mesh.py
 
 import pymeshlab
+import sys
 
-# Define input and output paths
-input_mesh = '/path/to/your/final_3Dbrain_raw.stl'
-output_mesh = '/path/to/your/final_3Dbrain.stl'
+# Ensure the script receives the required arguments
+if len(sys.argv) != 3:
+    print("Usage: python3 smooth_mesh.py <input_mesh> <output_mesh>")
+    sys.exit(1)
 
 # Create a MeshSet object
 ms = pymeshlab.MeshSet()
