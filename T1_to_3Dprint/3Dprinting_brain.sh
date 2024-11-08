@@ -2,8 +2,7 @@
 #3dprintyourbrain
 
 # >>> PREREQUISITES:
-#     Install FreeSurfer (v6.0.0), FSL, pymeshlab and admesh on Linux. 
-#     command to install admesh: sudo apt-get install -y admesh 
+#     Install FreeSurfer (v6.0.0), FSL, pymeshlab on Linux. 
 # 
 # >>> FOLDER STRUCTURE:
 #		3dbrain
@@ -19,17 +18,15 @@
 #     * Create the folder structure so that you have: 
 #       - a subject folder (e.g., sub-01) within the main folder (i.e., 3dbrain) containing
 #           - this script 3Dprinting_brain.sh
-#           - the smoothing.xml file
+#           - the python pymeshlab scripts combine_mesh.py, smooth_mesh.py, scale_mesh.py
 #           - subfolder input containing struct.nii or struct.nii.gz which is a T1 MPRAGE NifTI file.
 #
 #     * Type in the command terminal, WITHIN the directory where this script resides:
-#       ./3Dprinting_brain.sh  $MAIN_DIR $subject $MESHLAB_DIR
+#       ./3Dprinting_brain.sh  $MAIN_DIR $subject
 #       Three arguments: 
 #       !! Change: 1. $MAIN_DIR to the correct 3dbrain directory, e.g. "/media/sofie/my_brains/3dbrain"
 #                  2. $subject to the correct subject folder name, e.g., "sub-01"
-#                  # 3. $MESHLAB_DIR to the correct MeshLab directory 
-#                     (containing meshlabserver), e.g. "/usr/bin/"
-#       => example: ./3Dprinting_brain.sh "/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3Dprint_brain" "Josh" "/usr/bin/"
+#       => example: ./3Dprinting_brain.sh "/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3Dprint_brain" "Josh"
 
 # REMARK: Adapted from https://github.com/miykael/3dprintyourbrain
 #         Originally developped at BrainHackGhent2018 (https://brainhackghent.github.io/#3Dprint),
@@ -48,7 +45,7 @@ export force_recon=(0) #0 = dont run if file recon already computed, 1 = force t
 export structure=(1) # 1 = only cortex, 2 = cortex + subcortical structures
 
 # Specify the desired length of 3D brain (length = distance along saggital axis)
-export scale=(0) #if 0 -> no scaling; if 1 -> scaling to specified length
+export scale=(1) #if 0 -> no scaling; if 1 -> scaling to specified length
 export length=(100) # define in mm
 
 
@@ -175,7 +172,7 @@ fi
 if [ ! -f $SUBJECTS_DIR/final_3Dbrain_raw.stl ] || [ $force_run -eq 1 ]; then
 
         python "$MAIN_DIR/combine_mesh.py" "$SUBJECTS_DIR/subcortical.stl" "$SUBJECTS_DIR/cortical.stl" "$SUBJECTS_DIR/final_3Dbrain_raw.stl"
-	#admesh --no-check --merge=$SUBJECTS_DIR/subcortical.stl --write-binary-stl=$SUBJECTS_DIR/final_3Dbrain_raw.stl $SUBJECTS_DIR/cortical.stl
+
 fi
 
 #==========================================================================================
@@ -184,8 +181,8 @@ fi
 
 if [ ! -f $SUBJECTS_DIR/final_3Dbrain.stl ] || [ $force_run -eq 1 ]; then
 
-        python "$MAIN_DIR/pymeshlab_smoothing.py" "$SUBJECTS_DIR/final_3Dbrain_raw.stl" "$SUBJECTS_DIR/final_3Dbrain.stl"
-	#$MESHLAB_DIR/meshlabserver -i $SUBJECTS_DIR/final_3Dbrain_raw.stl -o $SUBJECTS_DIR/final_3Dbrain.stl -s $MAIN_DIR/smoothing.mlx
+        python "$MAIN_DIR/pymesh_smoothing.py" "$SUBJECTS_DIR/final_3Dbrain_raw.stl" "$SUBJECTS_DIR/final_3Dbrain.stl"
+
 fi
 
 #==========================================================================================
@@ -197,17 +194,5 @@ if [ $scale -eq 1 ];then
 
                 python "$MAIN_DIR/scale_mesh.py" "$SUBJECTS_DIR/final_3Dbrain.stl" "$SUBJECTS_DIR/final_3Dbrain_${length}mm.stl" $length
 		
-		#get current length
-		# admesh --no-check $SUBJECTS_DIR/final_3Dbrain.stl > $SUBJECTS_DIR/mesh_info.txt
-		# ymax=$(awk '/Min Y/{ print $8 }' $SUBJECTS_DIR/mesh_info.txt)
-		# ymin_temp=$(awk '/Min Y/{ print $4 }' $SUBJECTS_DIR/mesh_info.txt)
-		# ymin=${ymin_temp::-1}
-		# length_temp=$(echo "$ymax - $ymin" | bc)
-		
-		# #compute scale factor
-		# scale_factor=$(echo "$length / $length_temp" | bc -l)
-		
-		# #scale 3D file
-		# admesh --no-check --scale=$scale_factor --write-binary-stl=$SUBJECTS_DIR/final_3Dbrain_${length}mm.stl $SUBJECTS_DIR/final_3Dbrain.stl
 	fi
 fi
