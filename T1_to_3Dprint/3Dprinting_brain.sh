@@ -5,10 +5,12 @@
 #     Install FreeSurfer (v6.0.0), FSL, pymeshlab on Linux. 
 # 
 # >>> FOLDER STRUCTURE:
-#		3dbrain
+#		T1_to_3Dprint
 #		--3Dprinting_brain.sh
-#		--smoothing.xml
-#		--sub-01
+#		--combine_mesh.py
+#               --pymesh_smoothing.py
+#               --scale_mesh.py
+#		--sub-01 (or other folder name containing the T1 image)
 #		  --input
 #		    --struct.nii or struct.nii.gz
 #
@@ -16,17 +18,17 @@
 #                                  
 # >>> INSTRUCTIONS:
 #     * Create the folder structure so that you have: 
-#       - a subject folder (e.g., sub-01) within the main folder (i.e., 3dbrain) containing
+#       - a subject folder (e.g., sub-01) within the main folder (i.e., 3Dprintyourbrain) containing
 #           - this script 3Dprinting_brain.sh
 #           - the python pymeshlab scripts combine_mesh.py, smooth_mesh.py, scale_mesh.py
 #           - subfolder input containing struct.nii or struct.nii.gz which is a T1 MPRAGE NifTI file.
 #
 #     * Type in the command terminal, WITHIN the directory where this script resides:
 #       ./3Dprinting_brain.sh  $MAIN_DIR $subject
-#       Three arguments: 
-#       !! Change: 1. $MAIN_DIR to the correct 3dbrain directory, e.g. "/media/sofie/my_brains/3dbrain"
+#       Two arguments: 
+#       !! Change: 1. $MAIN_DIR to the correct 3dbrain directory, e.g. "/media/josh/my_brains/3Dprint_brain/T1_to_3Dprint"
 #                  2. $subject to the correct subject folder name, e.g., "sub-01"
-#       => example: ./3Dprinting_brain.sh "/mnt/c/Users/Josua/Documents/Research/Quednow/Data_analysis_EMIC/MRI/3Dprint_brain" "Josh"
+#       => example: ./3Dprinting_brain.sh "/mnt/c/Users/Josh/Documents/Research/MRI/3Dprint_brain/T1_to_3Dprint" "Josh"
 
 # REMARK: Adapted from https://github.com/miykael/3dprintyourbrain
 #         Originally developped at BrainHackGhent2018 (https://brainhackghent.github.io/#3Dprint),
@@ -69,9 +71,6 @@ export subjT1=$MAIN_DIR/${subject}/input/struct.nii.gz
 
 # Path to the subject (output folder)
 export SUBJECTS_DIR=$MAIN_DIR/${subject}/output
-
-# # Path to meshlabserver 
-# export MESHLAB_DIR=$3
 
 
 #==========================================================================================
