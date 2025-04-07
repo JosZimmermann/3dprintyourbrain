@@ -86,16 +86,25 @@ if [ ! -f $SUBJECTS_DIR/surf/lh.pial ] ||  [ ! -f $SUBJECTS_DIR/surf/rh.pial ] |
 fi
 
 #==========================================================================================
-#3. Create 3D Model of Cortical and Subcortical Areas
+#3. Create 3D Model of Cortical (LEFT and RIGHT separate) and Subcortical Areas
 #==========================================================================================
 
 # CORTICAL
-# Convert output of step (2) to stl-format
-if [ ! -f $SUBJECTS_DIR/cortical.stl ] || [ $force_run -eq 1 ]; then
+# Convert output of step (2) to stl-format SEPERATE FOR LEFT AND RIGHT
 
-	mris_convert --combinesurfs $SUBJECTS_DIR/surf/lh.pial $SUBJECTS_DIR/surf/rh.pial \
-             $SUBJECTS_DIR/cortical.stl
+# LEFT
+if [ ! -f $SUBJECTS_DIR/cortical_LEFT.stl ] || [ $force_run -eq 1 ]; then
+
+	mris_convert $SUBJECTS_DIR/surf/lh.pial $SUBJECTS_DIR/cortical_LEFT.stl
 fi
+
+# RIGHT
+if [ ! -f $SUBJECTS_DIR/cortical_RIGHT.stl ] || [ $force_run -eq 1 ]; then
+
+	mris_convert $SUBJECTS_DIR/surf/rh.pial $SUBJECTS_DIR/cortical_RIGHT.stl
+fi
+
+
 
 # SUBCORTICAL
 if [ ! -f $SUBJECTS_DIR/subcortical.stl ] || [ $force_run -eq 1 ]; then
@@ -165,34 +174,80 @@ if [ ! -f $SUBJECTS_DIR/subcortical.stl ] || [ $force_run -eq 1 ]; then
 	mris_convert $SUBJECTS_DIR/subcortical/subcortical $SUBJECTS_DIR/subcortical.stl
 fi
 
+
+
 #==========================================================================================
-#4. Combine Cortical and Subcortial 3D Models
+#4. Divide in Half the Subcortial 3D Model
 #==========================================================================================
 
 if [ ! -f $SUBJECTS_DIR/final_3Dbrain_raw.stl ] || [ $force_run -eq 1 ]; then
 
-        python "$MAIN_DIR/combine_mesh.py" "$SUBJECTS_DIR/subcortical.stl" "$SUBJECTS_DIR/cortical.stl" "$SUBJECTS_DIR/final_3Dbrain_raw.stl"
+        python "$MAIN_DIR/divide_mesh.py" "$SUBJECTS_DIR/subcortical.stl" "$SUBJECTS_DIR/subcortical_LEFT.stl" "$SUBJECTS_DIR/subcortical_RIGHT.stl"
 
 fi
 
+
+
 #==========================================================================================
-#5. ScaleDependent Laplacian Smoothing, create a smoother surface: pymeshlab
+#5. Combine Cortical and Subcortial 3D Models
 #==========================================================================================
 
-if [ ! -f $SUBJECTS_DIR/final_3Dbrain.stl ] || [ $force_run -eq 1 ]; then
+# LEFT
+if [ ! -f $SUBJECTS_DIR/final_3Dbrain_raw_LEFT.stl ] || [ $force_run -eq 1 ]; then
 
-        python "$MAIN_DIR/pymesh_smoothing.py" "$SUBJECTS_DIR/final_3Dbrain_raw.stl" "$SUBJECTS_DIR/final_3Dbrain.stl"
+        python "$MAIN_DIR/combine_mesh.py" "$SUBJECTS_DIR/subcortical_LEFT.stl" "$SUBJECTS_DIR/cortical_LEFT.stl" "$SUBJECTS_DIR/final_3Dbrain_raw_LEFT.stl"
 
 fi
 
+
+# RIGHT
+if [ ! -f $SUBJECTS_DIR/final_3Dbrain_raw_RIGHT.stl ] || [ $force_run -eq 1 ]; then
+
+        python "$MAIN_DIR/combine_mesh.py" "$SUBJECTS_DIR/subcortical_RIGHT.stl" "$SUBJECTS_DIR/cortical_RIGHT.stl" "$SUBJECTS_DIR/final_3Dbrain_raw_RIGHT.stl"
+
+fi
+
+
+
 #==========================================================================================
-#6. Scale to desired length
+#6. ScaleDependent Laplacian Smoothing, create a smoother surface: pymeshlab
+#==========================================================================================
+
+# LEFT
+if [ ! -f $SUBJECTS_DIR/final_3Dbrain_LEFT.stl ] || [ $force_run -eq 1 ]; then
+
+        python "$MAIN_DIR/pymesh_smoothing.py" "$SUBJECTS_DIR/final_3Dbrain_raw_LEFT.stl" "$SUBJECTS_DIR/final_3Dbrain_LEFT.stl"
+
+fi
+
+# RIGHT
+if [ ! -f $SUBJECTS_DIR/final_3Dbrain_LEFT.stl ] || [ $force_run -eq 1 ]; then
+
+        python "$MAIN_DIR/pymesh_smoothing.py" "$SUBJECTS_DIR/final_3Dbrain_raw_RIGHT.stl" "$SUBJECTS_DIR/final_3Dbrain_RIGHT.stl"
+
+fi
+
+
+
+#==========================================================================================
+#7. Scale to desired length
 #==========================================================================================
 
 if [ $scale -eq 1 ];then
-	if [ ! -f $SUBJECTS_DIR/final_3Dbrain_${length}mm.stl ] || [ $force_run -eq 1 ]; then
 
-                python "$MAIN_DIR/scale_mesh.py" "$SUBJECTS_DIR/final_3Dbrain.stl" "$SUBJECTS_DIR/final_3Dbrain_${length}mm.stl" $length
+	#LEFT
+	if [ ! -f $SUBJECTS_DIR/final_3Dbrain_${length}mm_LEFT.stl ] || [ $force_run -eq 1 ]; then
+
+                python "$MAIN_DIR/scale_mesh.py" "$SUBJECTS_DIR/final_3Dbrain_LEFT.stl" "$SUBJECTS_DIR/final_3Dbrain_${length}mm_LEFT.stl" $length
+		
+	fi
+
+	# RIGHT
+	if [ ! -f $SUBJECTS_DIR/final_3Dbrain_${length}mm_RIGHT.stl ] || [ $force_run -eq 1 ]; then
+
+                python "$MAIN_DIR/scale_mesh.py" "$SUBJECTS_DIR/final_3Dbrain_RIGHT.stl" "$SUBJECTS_DIR/final_3Dbrain_${length}mm_RIGHT.stl" $length
 		
 	fi
 fi
+
+
