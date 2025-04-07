@@ -26,7 +26,7 @@
 #     * Type in the command terminal, WITHIN the directory where this script resides:
 #       ./3Dprinting_brain.sh  $MAIN_DIR $subject
 #       Two arguments: 
-#       !! Change: 1. $MAIN_DIR to the correct 3dbrain directory, e.g. "/media/josh/my_brains/3Dprint_brain/T1_to_3Dprint"
+#                  1. $MAIN_DIR to the correct 3dbrain directory, e.g. "/media/josh/my_brains/3Dprint_brain/T1_to_3Dprint"
 #                  2. $subject to the correct subject folder name, e.g., "sub-01"
 #       => example: ./3Dprinting_brain.sh "/mnt/c/Users/Josh/Documents/Research/MRI/3Dprint_brain/T1_to_3Dprint" "Josh"
 
