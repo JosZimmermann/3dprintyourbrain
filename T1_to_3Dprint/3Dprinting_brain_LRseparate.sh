@@ -41,7 +41,7 @@
 # 0. Setup parameters
 #==========================================================================================
 #Specify if you want to run even if file already exists
-export force_run=(0) #0 = dont run if file already exists, 1 = force all except recon-all (freesurfer)
+export force_run=(1) #0 = dont run if file already exists, 1 = force all except recon-all (freesurfer)
 export force_recon=(0) #0 = dont run if file recon already computed, 1 = force to run recon-all
 
 # Specify if only cortex or including subcortical structures (subcortical structures include brainstem, cerebellum etc.)
@@ -89,6 +89,7 @@ fi
 #3. Create 3D Model of Cortical (LEFT and RIGHT separate) and Subcortical Areas
 #==========================================================================================
 
+
 # CORTICAL
 # Convert output of step (2) to stl-format SEPERATE FOR LEFT AND RIGHT
 
@@ -96,12 +97,18 @@ fi
 if [ ! -f $SUBJECTS_DIR/cortical_LEFT.stl ] || [ $force_run -eq 1 ]; then
 
 	mris_convert $SUBJECTS_DIR/surf/lh.pial $SUBJECTS_DIR/cortical_LEFT.stl
+	
+        #python "$MAIN_DIR/mri2mesh_new.py" "$SUBJECTS_DIR/surf/lh.pial" "$SUBJECTS_DIR/mri/orig.mgz" "$SUBJECTS_DIR/cortical_LEFT.stl"
+ 
+
 fi
 
 # RIGHT
 if [ ! -f $SUBJECTS_DIR/cortical_RIGHT.stl ] || [ $force_run -eq 1 ]; then
 
 	mris_convert $SUBJECTS_DIR/surf/rh.pial $SUBJECTS_DIR/cortical_RIGHT.stl
+	
+	#python "$MAIN_DIR/mri2mesh_new.py" "$SUBJECTS_DIR/surf/rh.pial" "$SUBJECTS_DIR/mri/orig.mgz" "$SUBJECTS_DIR/cortical_RIGHT.stl"
 fi
 
 
@@ -180,7 +187,7 @@ fi
 #4. Divide in Half the Subcortial 3D Model
 #==========================================================================================
 
-if [ ! -f $SUBJECTS_DIR/final_3Dbrain_raw.stl ] || [ $force_run -eq 1 ]; then
+if [ ! -f $SUBJECTS_DIR/subcortical_LEFT.stl ] || [ ! -f $SUBJECTS_DIR/subcortical_RIGHT.stl ] || [ $force_run -eq 1 ]; then
 
         python "$MAIN_DIR/divide_mesh.py" "$SUBJECTS_DIR/subcortical.stl" "$SUBJECTS_DIR/subcortical_LEFT.stl" "$SUBJECTS_DIR/subcortical_RIGHT.stl"
 
@@ -221,7 +228,7 @@ if [ ! -f $SUBJECTS_DIR/final_3Dbrain_LEFT.stl ] || [ $force_run -eq 1 ]; then
 fi
 
 # RIGHT
-if [ ! -f $SUBJECTS_DIR/final_3Dbrain_LEFT.stl ] || [ $force_run -eq 1 ]; then
+if [ ! -f $SUBJECTS_DIR/final_3Dbrain_RIGHT.stl ] || [ $force_run -eq 1 ]; then
 
         python "$MAIN_DIR/pymesh_smoothing.py" "$SUBJECTS_DIR/final_3Dbrain_raw_RIGHT.stl" "$SUBJECTS_DIR/final_3Dbrain_RIGHT.stl"
 

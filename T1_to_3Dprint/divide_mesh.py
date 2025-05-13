@@ -3,7 +3,7 @@ import sys
 
 # Check for the correct number of arguments
 if len(sys.argv) != 4:
-    print("Usage: python3 scale_mesh.py <input_mesh> <output_mesh_L> <output_mesh_R>")
+    print("Usage: python3 divide_mesh.py <input_mesh> <output_mesh_L> <output_mesh_R>")
     sys.exit(1)
 
 # Retrieve file paths and desired length from command-line arguments
@@ -20,8 +20,12 @@ ms.load_new_mesh(input_mesh_path)
 # Get the Y-axis bounds of the mesh's bounding box
 bbox = ms.current_mesh().bounding_box()
 current_length = bbox.dim_x()
-min_x = bbox.min_coord()[0]
+min_x = bbox.min()[0]
 mid_x = min_x + current_length / 2
+
+print(bbox.dim_x())
+print(bbox.min())
+print(mid_x)
 
 
 
@@ -29,10 +33,10 @@ mid_x = min_x + current_length / 2
 # ---- SAVE LEFT HALF OF VERTEX ----
 
 # Select vertices on left side
-ms.apply_filter('compute_selection_by_condition_per_vertex', condition=f"x < {mid_x}")
+ms.apply_filter('compute_selection_by_condition_per_vertex', condselect=f"x < {mid_x}")
 
 # Delete unselected (keep left)
-ms.apply_filter('delete_unselected_vertices')
+#ms.apply_filter('delete_unselected_vertices')
 
 # Save left half
 ms.save_current_mesh(output_mesh_path_L, binary=True)
@@ -43,10 +47,10 @@ ms.save_current_mesh(output_mesh_path_L, binary=True)
 # ---- SAVE RIGHT HALF OF VERTEX ----
 
 # Select vertices on right side
-ms.apply_filter('compute_selection_by_condition_per_vertex', condition=f"x > {mid_x}")
+ms.apply_filter('compute_selection_by_condition_per_vertex', condselect=f"x > {mid_x}")
 
 # Delete unselected (keep right)
-ms.apply_filter('delete_unselected_vertices')
+#ms.apply_filter('delete_unselected_vertices')
 
 # Save right half
 ms.save_current_mesh(output_mesh_path_R, binary=True)

@@ -22,7 +22,7 @@ bbox_diag = ms.current_mesh().bounding_box().diagonal()
 
 # Calculate the threshold as 1/10000 of the bounding box diagonal
 # and ensure it is within the min (0) and max (2.40433) bounds
-delta = pymeshlab.PercentageValue(min(max(bbox_diag / 10000, 0), 2.40433))
+threshold = pymeshlab.PercentageValue(min(max(bbox_diag / 10000, 0), 2.40433))
 
 # Apply "Merge Close Vertices" filter with the calculated and bounded threshold
 ms.apply_filter('meshing_merge_close_vertices', threshold=threshold)
